@@ -1,0 +1,82 @@
+environments:
+  dev:
+    base_url: "https://www.saucedemo.com"
+    api_base_url: ""
+    src_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+    tgt_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+  qa:
+    base_url: "https://opensource-demo.orangehrmlive.com"
+    api_base_url: ""
+    src_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+    tgt_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+  uat:
+    base_url: "https://www.saucedemo.com"
+    api_base_url: "http://192.168.1.102:8000"
+    # Auth block — configure per environment when the API requires authentication.
+    # token_url:            path appended to api_base_url for the token endpoint
+    # token_path:           JMESPath expression to extract the token from the response
+    # grant_type:           OAuth2 grant type sent in the form body (password / client_credentials)
+    # credential_env_vars:  maps form field names → environment variable names
+    # timeout_seconds:      per-request timeout for the auth client (default 30)
+    # retries:              retry count for transient auth failures (default 1)
+    auth:
+      token_url: "/api/v1/auth/token"
+      token_path: "access_token"
+      grant_type: "password"
+      credential_env_vars:
+        username: PYPLAYKIT_TEST_USERNAME
+        password: PYPLAYKIT_TEST_PASSWORD
+      timeout_seconds: 30
+      retries: 1
+    src_db:
+      db_type: "postgresql"
+      host: "192.168.1.102"
+      port: 5432
+      database: "ecom_db"
+    tgt_db:
+      db_type: "postgresql"
+      host: "192.168.1.102"
+      port: 5432
+      database: "ecom_db_replica"
+  prod:
+    base_url: "https://www.saucedemo.com"
+    api_base_url: ""
+    src_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+    tgt_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+  orangehrm:
+    base_url: "https://opensource-demo.orangehrmlive.com"
+    api_base_url: ""
+    src_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""
+    tgt_db:
+      db_type: "postgresql"
+      host: "localhost"
+      port: 5432
+      database: ""

@@ -1,0 +1,42 @@
+# Device & embedded automation — DUTs (devices under test), benches and their simulation twins.
+# Nothing here is loaded, connected or simulated unless a test requests the `dut` / `device_factory`
+# fixtures, so projects without devices can ignore this file.
+#
+# Values support ${ENV_VAR} and ${SECRET:key}; they are resolved per DUT only when that DUT is used.
+# Mode:  --pyplaykit-dut-mode sim|emu|hil   (or PYPLAYKIT_DUT_MODE; default below)
+# Bench: --pyplaykit-bench <name>           (or PYPLAYKIT_BENCH)
+#
+# Inspect:  pyplaykit devices list | show <dut> | check | scenarios | report | catalog
+#           pyplaykit-mcp list-devices | get-device-status <dut> | check-bench-readiness
+devices:
+  default_mode: sim
+
+  duts:
+    demo-thermostat:
+      description: Reference thermostat (tests/demo/functional/device)
+      capabilities: [serial]
+      properties: {fw: 2.1.0}
+      channels:
+        # On a real bench: the thermostat's USB-UART port. In sim mode the port is replaced by the twin's.
+        console: {type: serial, port: "${PYPLAYKIT_DEMO_THERMOSTAT_PORT}", baudrate: 115200}
+      health:
+        - {channel: console, send: version, expect: "FW=\\S+", timeout: 5}
+      sim:
+        twin: pyplaykit.devices.sim.twins:ThermostatTwin
+        args: {ambient: 18.0, target: 20.0, telemetry: false}
+
+  benches:
+    demo: {duts: [demo-thermostat], description: Demo bench (simulated)}
+
+  # Named fault sets for @pytest.mark.fault("<name>"):
+  fault_scenarios:
+    lossy-console: [{kind: drop, probability: 0.1, channel: console}, {kind: latency, delay: 0.05}]
+
+  # Device pool — leases, health checks, quarantine (off by default):
+  # pool: {enabled: true, backend: file, quarantine_after: 3}
+  #
+  # Per-environment overlays, deep-merged over the settings above:
+  # environments:
+  #   uat:
+  #     default_mode: hil
+  #     duts: {demo-thermostat: {channels: {console: {port: COM7}}}}

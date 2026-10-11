@@ -1,0 +1,403 @@
+framework:
+  name: "PyPlayKit - Enterprise Test Automation Framework"
+  tagline: "A modular, scalable, and CI/CD-ready Python + Playwright framework for enterprise automation"
+
+execution:
+  environment: "qa"
+  browser: "chromium"
+  headless: true
+  slow_mo_ms: 0
+  timeout_ms: 30000
+  navigation_timeout_ms: 45000
+  retries: 1
+  parallel_workers: 2
+  screenshot_on_failure: true
+  video_on_failure: true
+  video_dir: "reports/videos"
+  readiness_checks_enabled: false
+  readiness_timeout_seconds: 5
+  readiness_health_endpoint: "/health"
+  viewport:
+    width: 1440
+    height: 900
+
+reporting:
+  allure_results_dir: "reports/allure-results"
+  html_report_path: "reports/report.html"
+  observability_summary_path: "reports/observability/summary.json"
+  kpi_summary_path: "reports/observability/kpi_summary.json"
+  engineering_report_path: "reports/observability/engineering_report.json"
+  qa_report_path: "reports/observability/qa_functional_report.json"
+  leadership_report_path: "reports/observability/leadership_kpi_summary.json"
+  history:                              # per-session failure history; the test-impact map reads it
+    enabled: false                      #   for co-failure (US-AG06.1.1); enable in the CI full-suite job
+    path: "reports/observability/history.jsonl"
+    max_records: 500
+
+quality:
+  automation_coverage_target: 100
+
+tdm:
+  enabled: false
+  synthetic_schema:
+    user_id: int
+    username: string
+    email: email
+    active: bool
+  masking_rules:
+    email:
+      strategy: partial
+      visible_prefix: 2
+      visible_suffix: 8
+    token:
+      strategy: full
+  reset_mode: none
+  provisioning_by_env:
+    qa: qa-default
+    uat: uat-default
+    prod: prod-readonly
+  default_provisioner: qa-default
+
+integrations:
+  enabled: false
+  jira_export_path: "reports/integrations/jira_export.json"
+  test_management_export_path: "reports/integrations/test_management_export.json"
+  api_enabled: false
+  jira_api_endpoint: "/integrations/jira/results"
+  test_management_api_endpoint: "/integrations/test-management/results"
+
+plugins:
+  enabled: false
+  # Each entry resolves in order: (1) a built-in factory name below,
+  # (2) a `pyplaykit.plugins` entry-point name from an installed package,
+  # (3) a dotted import path "myorg.plugins.CustomPlugin".
+  # See docs/PLUGIN_AUTHORING_GUIDE.md.
+  enabled_plugins:
+    - api_plugin
+    - data_plugin
+    - security_plugin
+
+orchestration:
+  # Master switch. When false, orchestration is parsed but never enforced.
+  # Pass --pyplaykit-orchestration at runtime to activate enforcement.
+  enabled: false
+  suites:
+    # id: unique suite identifier used in dependency references
+    # marker: pytest marker name(s) that identify this suite's tests.
+    #         Defaults to the suite id when omitted. Comma-separated for multiple.
+    # depends_on: list of suite ids that must pass before this suite runs.
+    - id: smoke
+      marker: smoke
+      depends_on: []
+    - id: regression
+      marker: regression
+      depends_on:
+        - smoke
+  pipelines:
+    - name: default_pipeline
+      stages:
+        - name: baseline
+          suites:
+            - smoke
+        - name: full_validation
+          suites:
+            - regression
+
+database:
+  # Connection pool settings used by the db_pool / db_client fixtures.
+  # The pool is session-scoped — one pool per pytest-xdist worker.
+  # Each test checks out one connection and returns it when done.
+  # For non-parallel runs (no -n flag) min: 1, max: 5 is sufficient.
+  pool_min_connections: 2
+  pool_max_connections: 10
+  # connect_timeout applies per connection checkout attempt (seconds).
+  connect_timeout: 10
+
+resilience:
+  # Master switch. Keep false until your locators are stable; enable only when
+  # you experience genuine flakiness from dynamic DOMs or slow-rendering SPAs.
+  # Enabling this on a green suite adds overhead without benefit.
+  enabled: false
+
+  # How many times to re-evaluate the full selector list when all candidates fail.
+  # 0 = single pass (no retries). Increase to 1–2 for pages with animated loaders
+  # or deferred rendering. Each retry waits for Playwright's default timeout.
+  dom_retry_count: 0
+
+  # Global fallback selector list applied when a page does not pass its own
+  # fallback_selectors to wait_for_visible(). Prefer per-call overrides instead;
+  # global fallbacks are a last resort and can match unintended elements.
+  fallback_selectors: []
+
+  # Confidence penalty per fallback hop (0.0–1.0).
+  # Score = 1.0 - (selector_index * hop_decay) - (attempt * retry_decay)
+  # At the default 0.15, the 2nd fallback scores 0.85, the 3rd scores 0.70.
+  confidence_decay_per_hop: 0.15
+
+  # Confidence penalty per DOM retry attempt (0.0–1.0).
+  # At the default 0.1, a 2nd attempt costs an extra 0.10 off the score.
+  confidence_decay_per_retry: 0.1
+
+  # Minimum confidence score before a WARNING is logged. Tests still pass —
+  # this is a signal that your fallback chain is being leaned on heavily.
+  # Set to 0.0 to disable the warning. Recommended: 0.5
+  confidence_threshold: 0.5
+
+  # Write every recovery event (fallback used or retry triggered) to a JSONL
+  # file for post-run analysis. Keep false in CI unless actively debugging.
+  audit_enabled: false
+  audit_log_path: "reports/resilience/recovery_audit.jsonl"
+
+logging:
+  level: "INFO"
+  file: "reports/framework.log"
+  format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+
+# ── GAP-20: Mobile / device emulation ─────────────────────────────────────────
+# Set to a Playwright device descriptor string to emulate a mobile device.
+# e.g. "iPhone 13", "Pixel 5", "iPad Pro"
+# null (default) = standard desktop viewport from execution.viewport above.
+# Pass --pyplaykit-device at runtime to override.
+browser:
+  device: null
+
+# ── GAP-18: Visual regression / pixel-diff ────────────────────────────────────
+# Disabled by default. Enable to activate baseline screenshot comparison.
+# Run with --pyplaykit-update-snapshots once to capture baselines, then commit
+# the snapshots and remove the flag for subsequent CI runs.
+  # Device recovery (EP-09): reconnect dropped links and heal hung devices. Disabled by default.
+  devices:
+    enabled: false
+    # Reconnect with exponential backoff when a link drops mid-test; the command is repeated once.
+    reconnect: {attempts: 3, delay: 1.0, backoff: 2.0, max_delay: 30}
+    # After an infrastructure failure: try each step until the DUT passes its health probes again.
+    escalation: [reconnect, soft_reset, power_cycle]
+    power_off_time: 2.0
+    audit_log_path: "reports/resilience/recovery_audit.jsonl"
+
+visual_regression:
+  enabled: false
+  # Maximum fraction of pixels that may differ before a test fails (0.0–1.0).
+  threshold: 0.1
+  snapshot_dir: "reports/visual_snapshots"
+
+# ── GAP-19: WCAG accessibility testing ────────────────────────────────────────
+# Disabled by default. Requires: pip install pyplaykit[accessibility]
+# impact_filter controls which violation severities cause a test failure.
+# Valid levels: critical, serious, moderate, minor
+accessibility:
+  enabled: false
+  impact_filter:
+    - critical
+    - serious
+  # false = log violations as warnings but do not fail the test
+  fail_on_violation: true
+
+# ── GAP-24: Quality Gate Engine ───────────────────────────────────────────────
+# Disabled by default. Enable to enforce pass/warn/block policy at session end.
+# Use --pyplaykit-quality-gate at runtime to activate without changing config.
+# Verdicts: PASS (all thresholds met) | WARN (warn level hit) | BLOCK (exits 1)
+quality_gate:
+  enabled: false
+  report_path: "reports/quality_gate/verdict.json"
+  signals:
+    # Minimum test pass rate (%) before gate triggers.
+    pass_rate:
+      warn: 95     # warn when pass rate drops below this
+      block: 90    # block release when pass rate drops below this
+    # Maximum flaky test rate (%) allowed.
+    flaky_rate:
+      warn: 5
+      block: 10
+    # Maximum number of failed tests allowed. null = no threshold.
+    fail_count:
+      warn: null
+      block: null
+  # GAP-32: number of historical verdict runs to consider for trend analysis
+  trend_window: 5
+  # GAP-32: per-signal weights for composite risk score (0-100)
+  signal_weights:
+    pass_rate: 40
+    fail_count: 30
+    flaky_rate: 20
+    contract_health: 5
+    data_integrity: 5
+
+# ── GAP-27: Unified telemetry (OpenTelemetry) ─────────────────────────────────
+# Disabled by default. Requires: pip install pyplaykit[telemetry]
+# Set otlp_endpoint to your collector URL, e.g. http://localhost:4317
+telemetry:
+  enabled: false
+  otlp_endpoint: ""
+  service_name: "pyplaykit"
+  # Set to a port number to expose a Prometheus /metrics endpoint.
+  # Requires: pip install pyplaykit[prometheus]
+  prometheus_port: null
+  # Interface the /metrics endpoint binds to. Loopback by default; use "0.0.0.0"
+  # only when a scraper on another host must reach it.
+  prometheus_addr: "127.0.0.1"
+  events_log: "reports/telemetry/events.jsonl"
+
+# ── GAP-26: Enterprise secrets provider + RBAC ────────────────────────────────
+# Controls how ${SECRET:key} placeholders in YAML config files are resolved
+# (alongside ${ENV_VAR}). Providers: env (default) | vault | aws | azure.
+# Each non-env provider requires its extra: pip install pyplaykit[vault|aws|azure]
+secrets:
+  provider: env
+  vault:                 # requires: pip install pyplaykit[vault]
+    vault_addr: ${VAULT_ADDR}
+    vault_token: ${VAULT_TOKEN}
+    vault_path: secret/data/pyplaykit
+    mount_point: secret
+  aws:                   # requires: pip install pyplaykit[aws]
+    aws_secret_name: pyplaykit/qa
+    aws_region: us-east-1
+  azure:                 # requires: pip install pyplaykit[azure]
+    vault_url: ${AZURE_KEY_VAULT_URL}
+
+# Role-based access control (GAP-26). When allowed_environments is non-empty,
+# runs targeting an environment outside the list are blocked. Empty = no limit.
+rbac:
+  allowed_environments: []
+
+# Governance policy (GAP-33). All fields are opt-in; defaults are inert.
+policy:
+  required_quality_gate: []
+  minimum_coverage: null
+  required_scans: []
+  run_schedule: null
+  run_as_env_var: null
+
+# ── GAP-28: Live execution dashboard ──────────────────────────────────────────
+# Disabled by default. Pass --pyplaykit-dashboard to start during a run.
+dashboard:
+  enabled: false
+  port: 7474
+  live_log: "reports/dashboard/live.jsonl"
+
+# ── QE agents (Wave 7) ────────────────────────────────────────────────────────
+# Disabled by default. See docs/QE_AGENTS_DESIGN.md §9 and `pyplaykit agents list`.
+# Keys under agents.* are governed org -> business unit -> project and can be locked.
+agents:
+  enabled: false
+  enabled_agents: []                    # e.g. [change-intelligence]
+  allowed: []                           # agents that may run; empty = any enabled agent
+  denied: []
+  autonomy:
+    max: recommend                      # analyze | recommend | propose | branch | pr
+  llm:
+    adapter: openai_compat              # anthropic | openai_compat | ollama
+    endpoint: ""                        # e.g. ${PYPLAYKIT_LLM_ENDPOINT}
+    api_key: ""                         # e.g. ${SECRET:PYPLAYKIT_LLM_API_KEY}; never a literal key
+    allowed_providers: []
+    allowed_models: []
+    tiers:                              # agents ask for a tier; empty model = tier not available
+      fast:     { model: "", fallback: [] } # fallback items: "model" (default provider) or {provider, model}
+      standard: { model: "", fallback: [] }
+      strong:   { model: "", fallback: [] }
+    retry: { max_attempts: 3, initial_backoff_s: 1, max_backoff_s: 30 }  # rate limits, timeouts, 5xx
+    pricing: {}                         # model -> {input_per_mtok, output_per_mtok, cache_read_per_mtok}
+    providers: {}                       # name -> {adapter: anthropic | openai_compat | ollama, endpoint, api_key,
+                                        #   platform, ..., hosting: external | self_hosted}; "default" = the keys above
+    egress: {}                          # provider -> allowed data classes; external default [metadata]
+    response_cache: false               # opt-in; reports/agents/response_cache/<project>/, keyed by project, policy hash, provider
+  budgets:                              # checked before every LLM call; cost from agents.llm.pricing
+    per_call_usd: 0.5
+    per_run_usd: 2.0
+    per_pipeline_usd: 5.0
+    per_agent_daily_usd: 20.0           # enforced with a usage store; in CI without one: advisory
+    per_project_monthly_usd: 300.0
+    store: null                         # usage-store directory (e.g. restored by a CI cache); null: reports/agents/usage locally, none in CI
+    test_runs_per_run: 3                # run_tests calls per run
+    test_wall_time_s: 1800              # total run_tests wall time per run
+    max_tokens_per_run: 200000
+    max_tool_calls_per_run: 50
+  execution:
+    allowed_envs: [dev, qa]
+    timeout_s: 900
+    env_passthrough: []                 # extra non-secret variables stack runs receive (globs); provider
+                                        #   and SCM credentials are refused even if listed (F5)
+  scm:
+    protected_branches: [main, master, "release/*"]
+    allow_pr: false
+  telemetry:                            # GenAI spans need telemetry.enabled (and otlp_endpoint for OTLP)
+    capture_content: false              # prompts, completions, tool arguments/results; redacted
+    otlp_classes: [metadata]            # data classes the OTLP endpoint may receive; captured content
+                                        #   is exported only with source, results, documents, test_data
+  external:
+    require_integrity: true
+    agents: []                          # [{manifest: path/to/agent.yaml | entry_point: name, sha256: "…"}]
+  plugins:
+    allowed: []                         # third-party stack adapters / recipes: [{name, sha256}]
+  governance:
+    required: false
+  mcp:
+    egress: [metadata]                  # data classes a run started from an MCP client may send
+  redaction:                            # applied to every LLM request; fails closed (US-AG04.2.1)
+    env_allowlist: []                   # environment variables whose values are always masked
+    env_patterns: ["PYPLAYKIT_TEST_*"]  # ... and names matching these (plus secret-looking names)
+    patterns: []                        # extra [{name, regex}] to mask
+    pii: true                           # e-mail addresses, card numbers, phone numbers
+  tools:                                # tool permission tiers (US-AG04.4.1)
+    allowed_tiers: null                 # e.g. [read, execute]; null: what the autonomy level grants
+    extra: {}                           # tools the catalogue does not know: {name: read | execute | propose}
+  artifacts:                            # what agents may store (threat model F13); archives are never stored
+    max_bytes: 5242880
+    max_total_bytes: 52428800
+    allowed_types: null                 # null: json, text, markdown, csv, xml/junit, diff, png, jpeg
+  output:
+    allowed_link_domains: []            # links in model-generated text kept only to these domains
+  ci:
+    artifact_classes: [metadata]        # data classes CI artifact uploads may hold (F21); captured content
+                                        #   stays out of the uploaded events file unless they cover it
+  change_intelligence:
+    min_confidence: null                # 0-1; below it the plan is the full suite; set from the Phase 2 baseline (ADR-0012)
+    max_map_age: null                   # seconds or a duration ("36h", "7d"); an older map means the full suite
+    shadow_sample_rate: null
+    apply_selection: false              # kill switch: --pyplaykit-select-from deselects only when true (read from
+                                        #   the base branch in PR pipelines; PR pipelines only)
+    risk:                               # deterministic risk score (US-AG06.2.2); weights are normalised
+      weights: {change_type: 0.30, criticality: 0.20, coverage_gap: 0.20, size: 0.10, failure_history: 0.10, blast_radius: 0.10}
+      thresholds: {medium: 0.35, high: 0.65}
+      size_saturation_lines: 200
+      criticality:
+        default: medium                 # low | medium | high | critical
+        areas: []                       # [{paths: ["core/**", "utils/auth*"], level: high}], first match wins
+  test_review:                         # test-review agent (US-AG17.3.3)
+    rules: {}                         # severity per rule: high | medium | low | off, e.g. {print: off, missing-marker: low}
+    max_files: 40
+    allowed_url_hosts: []             # hosts allowed in test code, e.g. [localhost]
+  test_creation:                       # test-creation agent (ADR-0019)
+    max_test_cases: 25
+    batch_size: 5                     # test cases per model request
+    fix_attempts: 2                   # problems sent back to the model before a skeleton is kept
+    columns: {}                       # explicit CSV headers, e.g. {id: "TC No", steps: "Procedure"}
+  evals:
+    export: null
+  reports:
+    minutes_saved: {}                   # agent -> minutes of manual work a succeeded run saves (leadership report)
+  min_contract_version: "1.0"
+  risk_overrides: {}
+  releases:
+    registry: config/agents/releases/
+    approvers:
+      low: [owner]
+      medium: [owner, qe_platform]
+      high: [owner, qe_platform, security]
+    require_pin: false
+    require_signature: false
+    on_revoke: disable
+  assignments: {}
+  retirement:
+    in_flight: finish
+  retention:
+    audit_days: 365
+    runs_days: 90
+    proposals_days_after_decision: 30
+    captured_content_days: 14
+    response_cache_days: 7
+    media_artifacts_days: 90
+    releases_days: 365
+  triggers:
+    on_change: []
+    on_session_finish: []               # local only, with --pyplaykit-agents

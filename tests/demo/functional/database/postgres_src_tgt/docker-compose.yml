@@ -1,0 +1,48 @@
+# Two PostgreSQL containers for the SRC → TGT data-comparison demo.
+#
+#   src_db  → the "source" / legacy system   (abbreviated column names)
+#   tgt_db  → the "target" / migrated system  (full column names)
+#
+# Non-standard host ports (55432 / 55433) are used so this never clashes with a
+# local PostgreSQL on 5432. Each container seeds itself on first start from the
+# SQL under ./sql (mounted into /docker-entrypoint-initdb.d).
+#
+# Usage:
+#   docker compose up -d          # start + seed both databases
+#   docker compose ps             # check health
+#   docker compose down -v        # stop and delete all data (re-seeds next up)
+
+services:
+  src_db:
+    image: postgres:16-alpine
+    container_name: pyplaykit_demo_src_db
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: srcdb
+    ports:
+      - "55432:5432"
+    volumes:
+      - ./sql/src_init.sql:/docker-entrypoint-initdb.d/01_src_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo -d srcdb"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  tgt_db:
+    image: postgres:16-alpine
+    container_name: pyplaykit_demo_tgt_db
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: tgtdb
+    ports:
+      - "55433:5432"
+    volumes:
+      - ./sql/tgt_init.sql:/docker-entrypoint-initdb.d/01_tgt_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo -d tgtdb"]
+      interval: 3s
+      timeout: 3s
+      retries: 20

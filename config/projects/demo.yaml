@@ -1,0 +1,65 @@
+# demo Project Configuration (written by `pyplaykit init`)
+#
+# This is a fully-populated, working example that backs the runnable reference
+# tests under tests/demo/. Because tests/demo/ maps to this 'demo' project,
+# running `pytest tests/demo/` (or `--pyplaykit-project demo`) resolves these
+# settings, deep-merged over the global config/environments.yaml defaults.
+
+project:
+  name: "demo"
+  description: "Runnable reference project backing tests/demo/"
+  team:
+    lead: "PyPlayKit"
+    engineers: []
+    slack_channel: "#pyplaykit-demo"
+
+  markers:
+    - demo
+
+  # Every environment targets the same public demo services so the reference
+  # tests run with zero setup regardless of --pyplaykit-env.
+  environments:
+    dev:
+      base_url: "https://www.saucedemo.com"
+      api_base_url: "https://jsonplaceholder.typicode.com"
+      database_url: "sqlite:///test_data/demo.db"
+    qa:
+      base_url: "https://www.saucedemo.com"
+      api_base_url: "https://jsonplaceholder.typicode.com"
+      database_url: "sqlite:///test_data/demo.db"
+    uat:
+      base_url: "https://www.saucedemo.com"
+      api_base_url: "https://jsonplaceholder.typicode.com"
+      database_url: "sqlite:///test_data/demo.db"
+    prod:
+      base_url: "https://www.saucedemo.com"
+      api_base_url: "https://jsonplaceholder.typicode.com"
+      database_url: "sqlite:///test_data/demo.db"
+
+  # API endpoints (relative to api_base_url) exercised by test_demo_api.py.
+  api_endpoints:
+    posts: "/posts"
+    users: "/users"
+    comments: "/comments"
+
+  # Test users — SauceDemo's public standard_user. Credentials still come from
+  # environment variables; set them before running the UI demo:
+  #   PYPLAYKIT_TEST_USERNAME=standard_user
+  #   PYPLAYKIT_TEST_PASSWORD=secret_sauce
+  test_users:
+    standard_user:
+      username: "${PYPLAYKIT_TEST_USERNAME}"
+      password: "${PYPLAYKIT_TEST_PASSWORD}"
+
+  # Feature flags used by the reference tests.
+  features:
+    ui_demo: true
+    api_demo: true
+    database_demo: true
+
+  # Test execution settings.
+  execution:
+    browser: "chromium"
+    headless: true
+    timeout: 30000
+    retries: 1

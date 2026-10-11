@@ -1,0 +1,32 @@
+# Organization-wide governance baseline (GAP-30).
+#
+# PyPlayKit resolves an org -> business_unit -> project -> environment -> CLI
+# hierarchy. This file is the ORG layer: the platform team's baseline policy.
+# Business units refine it in business_units/<bu>.yaml and projects in
+# projects/<project>.yaml, each deep-merged over this file (lower layer wins)
+# EXCEPT for keys listed under policy.locked_keys below, which the org pins so
+# no lower layer can weaken them.
+#
+# Every top-level key other than `policy` is a normal config overlay merged onto
+# config/config.yaml. Remove this whole config/org/ directory to disable org
+# governance entirely (the framework then resolves the flat config as before).
+
+policy:
+  # Keys the organization LOCKS. Lower layers (BU/project) may not override
+  # these; if they try, the org value is re-applied and a warning is logged.
+  # Use dotted paths into the resolved config.
+  locked_keys:
+    - quality_gate.enabled
+    - rbac.allowed_environments
+
+# --- Org baseline config overlay (merged onto config/config.yaml) ------------
+quality_gate:
+  # Locked on above: every business unit and project inherits an enabled gate.
+  enabled: true
+
+rbac:
+  # Locked on above: the org constrains which environments any project may target.
+  allowed_environments:
+    - dev
+    - qa
+    - uat

@@ -1,0 +1,15 @@
+# Business-unit governance overlay (GAP-30).
+#
+# Deep-merged over config/org/org.yaml for every project that belongs to this
+# business unit. A project opts into a BU by declaring `business_unit: <name>`
+# at the top of its config/org/projects/<project>.yaml, or via
+# --pyplaykit-business-unit / PYPLAYKIT_BUSINESS_UNIT.
+#
+# You may override any key the org has NOT locked. Example: tighten the quality
+# gate for this BU while inheriting the org's locked policy.
+
+quality_gate:
+  signals:
+    pass_rate:
+      warn: 0.95
+      block: 0.90

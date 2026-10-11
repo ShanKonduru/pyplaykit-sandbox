@@ -1,0 +1,14 @@
+# Project governance overlay (GAP-30).
+#
+# Deep-merged over org.yaml (and this project's business unit, if any). The
+# highest-priority governance layer — but still cannot override org locked_keys.
+#
+# Declare which business unit this project belongs to so the BU overlay applies:
+business_unit: "platform"
+
+# Project-specific overrides for any non-locked key:
+quality_gate:
+  signals:
+    flaky_rate:
+      warn: 0.05
+      block: 0.10

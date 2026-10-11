@@ -1,0 +1,60 @@
+# project1 Project Configuration
+#
+# When a test runs under tests/project1/... (or with --pyplaykit-project project1),
+# these settings are deep-merged over the global config/environments.yaml defaults.
+# ${VAR} placeholders are expanded from environment variables at load time.
+
+project:
+  name: "project1"
+  description: "TODO: describe the project1 project"
+  team:
+    lead: "TBD"
+    engineers: []
+    slack_channel: "#project1-qa"
+
+  markers:
+    - project1
+
+  # Environment-specific URLs. database_url carries only non-secret parts
+  # (host/port/database); DB credentials come from SRC_DB_USER / SRC_DB_PASSWORD.
+  environments:
+    dev:
+      base_url: "https://dev.project1.example.com"
+      api_base_url: "https://api.dev.project1.example.com"
+      database_url: "postgresql://dev-db:5432/project1_dev"
+    qa:
+      base_url: "https://qa.project1.example.com"
+      api_base_url: "https://api.qa.project1.example.com"
+      database_url: "postgresql://qa-db:5432/project1_qa"
+    uat:
+      base_url: "https://uat.project1.example.com"
+      api_base_url: "https://api.uat.project1.example.com"
+      database_url: "postgresql://uat-db:5432/project1_uat"
+    prod:
+      base_url: "https://www.project1.example.com"
+      api_base_url: "https://api.project1.example.com"
+      database_url: "postgresql://prod-db:5432/project1_prod"
+
+  # API endpoints (relative to api_base_url)
+  api_endpoints:
+    example: "/api/v1/example"
+
+  # Test users — credentials sourced from environment variables, never hardcoded.
+  test_users:
+    standard_user:
+      username: "${PROJECT1_USERNAME}"
+      password: "${PROJECT1_PASSWORD}"
+    admin_user:
+      username: "${PROJECT1_ADMIN_USERNAME}"
+      password: "${PROJECT1_ADMIN_PASSWORD}"
+
+  # Feature flags
+  features:
+    example_feature: true
+
+  # Test execution settings
+  execution:
+    browser: "chromium"
+    headless: true
+    timeout: 30000
+    retries: 2
