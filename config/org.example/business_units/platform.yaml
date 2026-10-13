@@ -1,0 +1,16 @@
+# Business-unit governance overlay (GAP-30).
+#
+# Deep-merged over config/org/org.yaml for every project that belongs to this
+# business unit. A project opts into a BU by declaring `business_unit: <name>`
+# at the top of its config/org/projects/<project>.yaml, or via
+# --innoharmony-business-unit / INNOHARMONY_BUSINESS_UNIT.
+#
+# You may override any key the org has NOT locked. Example: tighten the quality
+# gate for this BU while inheriting the org's locked policy. Thresholds are
+# percentages, like the defaults in config/config.yaml (pass_rate warn 95 / block 90).
+
+quality_gate:
+  signals:
+    pass_rate:
+      warn: 98
+      block: 95
